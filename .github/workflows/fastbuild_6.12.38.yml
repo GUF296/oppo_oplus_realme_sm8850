@@ -383,19 +383,17 @@ jobs:
           cd common
           wget -O droidspaces_sysvipc_kabi.patch https://raw.githubusercontent.com/ravindu644/Droidspaces-OSS/refs/heads/main/Documentation/resources/kernel-patches/GKI/kernel-6.12/001.GKI-6.12-or-above-fix_sysvipc_kabi.patch
           patch -p1 -N -F 3 < droidspaces_sysvipc_kabi.patch
-          echo "正在应用 NTsync 补丁..."
-          wget -O ntsync_base.patch https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/refs/heads/main/NTsync/ntsync_base.patch
-          if [[ -f drivers/misc/ntsync.c && -f include/uapi/linux/ntsync.h ]]; then
-            echo "NTsync 基础文件已存在，跳过 ntsync_base.patch"
-          else
-            patch -p1 -N -F 3 < ntsync_base.patch
+          echo "正在启用 6.12 源码内置 NTsync..."
+          if [[ ! -f drivers/misc/ntsync.c || ! -f include/uapi/linux/ntsync.h ]]; then
+            echo "::error::当前 6.12 源码缺少 NTsync 驱动文件，请先加入适配 6.12 的 NTsync 补丁。"
+            exit 1
           fi
-          wget -O ntsync_compat_android15-6.6.patch https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/refs/heads/main/NTsync/ntsync_compat_android15-6.6.patch
-          if grep -q '^config NTSYNC$' drivers/misc/Kconfig && grep -q 'CONFIG_NTSYNC' drivers/misc/Makefile; then
-            echo "NTsync Kconfig/Makefile 配置已存在，跳过 compat patch"
-          else
-            patch -p1 -N -F 3 < ntsync_compat_android15-6.6.patch
+          if ! grep -q '^config NTSYNC$' drivers/misc/Kconfig || ! grep -q 'CONFIG_NTSYNC' drivers/misc/Makefile; then
+            echo "::error::当前 6.12 源码缺少 NTsync Kconfig/Makefile 接入，请先加入适配 6.12 的 NTsync 补丁。"
+            exit 1
           fi
+          sed -i '/^config NTSYNC$/,/^config /{/^[[:space:]]*depends on BROKEN$/d}' drivers/misc/Kconfig
+          grep -A10 '^config NTSYNC$' drivers/misc/Kconfig
           cd ..
           set_config() {
             local name="$1"
