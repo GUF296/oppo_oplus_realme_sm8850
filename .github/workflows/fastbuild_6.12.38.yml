@@ -385,9 +385,17 @@ jobs:
           patch -p1 -N -F 3 < droidspaces_sysvipc_kabi.patch
           echo "正在应用 NTsync 补丁..."
           wget -O ntsync_base.patch https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/refs/heads/main/NTsync/ntsync_base.patch
-          patch -p1 -N -F 3 < ntsync_base.patch
+          if [[ -f drivers/misc/ntsync.c && -f include/uapi/linux/ntsync.h ]]; then
+            echo "NTsync 基础文件已存在，跳过 ntsync_base.patch"
+          else
+            patch -p1 -N -F 3 < ntsync_base.patch
+          fi
           wget -O ntsync_compat_android15-6.6.patch https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/refs/heads/main/NTsync/ntsync_compat_android15-6.6.patch
-          patch -p1 -N -F 3 < ntsync_compat_android15-6.6.patch
+          if grep -q '^config NTSYNC$' drivers/misc/Kconfig && grep -q 'CONFIG_NTSYNC' drivers/misc/Makefile; then
+            echo "NTsync Kconfig/Makefile 配置已存在，跳过 compat patch"
+          else
+            patch -p1 -N -F 3 < ntsync_compat_android15-6.6.patch
+          fi
           cd ..
           set_config() {
             local name="$1"
