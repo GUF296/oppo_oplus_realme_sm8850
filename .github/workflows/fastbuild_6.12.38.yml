@@ -376,7 +376,49 @@ jobs:
           wget https://github.com/$GITHUB_REPOSITORY/raw/refs/heads/$GITHUB_REF_NAME/other_patch/lz4kd.patch
           patch -p1 -F 3 < lz4kd.patch || true
           
-      - name: 添加SUSFS 配置项
+      - name: 添加 NTsync 与 Droidspaces 支持
+        run: |
+          cd kernel_workspace
+          echo "正在应用 Droidspaces GKI 6.12+ kABI 补丁..."
+          cd common
+          wget -O droidspaces_sysvipc_kabi.patch https://raw.githubusercontent.com/ravindu644/Droidspaces-OSS/refs/heads/main/Documentation/resources/kernel-patches/GKI/kernel-6.12/001.GKI-6.12-or-above-fix_sysvipc_kabi.patch
+          patch -p1 -N -F 3 < droidspaces_sysvipc_kabi.patch
+          echo "正在应用 NTsync 补丁..."
+          wget -O ntsync_base.patch https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/refs/heads/main/NTsync/ntsync_base.patch
+          patch -p1 -N -F 3 < ntsync_base.patch
+          wget -O ntsync_compat_android15-6.6.patch https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/refs/heads/main/NTsync/ntsync_compat_android15-6.6.patch
+          patch -p1 -N -F 3 < ntsync_compat_android15-6.6.patch
+          cd ..
+          set_config() {
+            local name="$1"
+            local value="$2"
+            local file="./common/arch/arm64/configs/gki_defconfig"
+            if grep -qE "^# ${name} is not set$" "$file"; then
+              sed -i "s/^# ${name} is not set$/${name}=${value}/" "$file"
+            elif grep -qE "^${name}=" "$file"; then
+              sed -i "s/^${name}=.*/${name}=${value}/" "$file"
+            else
+              echo "${name}=${value}" >> "$file"
+            fi
+          }
+          echo "正在写入 Droidspaces 与 NTsync GKI 配置..."
+          set_config CONFIG_SYSVIPC y
+          set_config CONFIG_POSIX_MQUEUE y
+          set_config CONFIG_IPC_NS y
+          set_config CONFIG_PID_NS y
+          set_config CONFIG_DEVTMPFS y
+          set_config CONFIG_NETFILTER_XT_MATCH_ADDRTYPE y
+          set_config CONFIG_NETFILTER_XT_TARGET_REJECT y
+          set_config CONFIG_NETFILTER_XT_TARGET_LOG y
+          set_config CONFIG_NETFILTER_XT_MATCH_RECENT y
+          set_config CONFIG_IP_SET y
+          set_config CONFIG_IP_SET_HASH_IP y
+          set_config CONFIG_IP_SET_HASH_NET y
+          set_config CONFIG_NETFILTER_XT_SET y
+          set_config CONFIG_NTSYNC y
+          grep -E 'CONFIG_(SYSVIPC|POSIX_MQUEUE|IPC_NS|PID_NS|DEVTMPFS|NTSYNC)=' ./common/arch/arm64/configs/gki_defconfig
+          grep -E 'CONFIG_(NETFILTER_XT_MATCH_ADDRTYPE|NETFILTER_XT_TARGET_REJECT|NETFILTER_XT_TARGET_LOG|NETFILTER_XT_MATCH_RECENT|IP_SET|IP_SET_HASH_IP|IP_SET_HASH_NET|NETFILTER_XT_SET)=' ./common/arch/arm64/configs/gki_defconfig
+                - name: 添加SUSFS 配置项
         if: inputs.susfs_enable
         run: |
           cd kernel_workspace
