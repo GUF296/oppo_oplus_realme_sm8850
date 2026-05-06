@@ -418,7 +418,7 @@ jobs:
           set_config CONFIG_NTSYNC y
           grep -E 'CONFIG_(SYSVIPC|POSIX_MQUEUE|IPC_NS|PID_NS|DEVTMPFS|NTSYNC)=' ./common/arch/arm64/configs/gki_defconfig
           grep -E 'CONFIG_(NETFILTER_XT_MATCH_ADDRTYPE|NETFILTER_XT_TARGET_REJECT|NETFILTER_XT_TARGET_LOG|NETFILTER_XT_MATCH_RECENT|IP_SET|IP_SET_HASH_IP|IP_SET_HASH_NET|NETFILTER_XT_SET)=' ./common/arch/arm64/configs/gki_defconfig
-                - name: 添加SUSFS 配置项
+      - name: 添加SUSFS 配置项
         if: inputs.susfs_enable
         run: |
           cd kernel_workspace
